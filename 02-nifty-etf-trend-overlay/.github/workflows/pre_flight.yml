@@ -1,0 +1,53 @@
+name: Pre-Flight
+
+# Ultimate enforcer for Jules/Ruflo. A red check BLOCKS the merge.
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: preflight-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    name: preflight-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REPO_ROOT: ${{ github.workspace }}
+    steps:
+      - name: Checkout (with LFS for any tracked data)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python (clean env)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned deps
+        run: pip install -r requirements-ci.txt
+
+      # OPTIONAL: pull the raw Norgate panel from your data store so the hash can
+      # be RECOMPUTED and compared. Provide scripts/fetch_data.sh + repo secrets
+      # (e.g. S3 creds). If absent, the gate still enforces the committed manifest.
+      - name: Fetch raw data (optional)
+        if: ${{ hashFiles('scripts/fetch_data.sh') != '' }}
+        run: bash scripts/fetch_data.sh
+        env:
+          DATA_URL: ${{ secrets.DATA_URL }}
+          DATA_TOKEN: ${{ secrets.DATA_TOKEN }}
+
+      - name: Self-test pipeline code (determinism / invalidation / QC-fail)
+        run: python tests/selftest.py
+
+      - name: ENFORCE — ledger hash-lock + K-budget + integrity
+        run: python src/verify_ledger.py
+
+      - name: Summary
+        if: always()
+        run: echo "Pre-Flight complete. Red = merge blocked (QC FAIL, hash mismatch, or K>20)."

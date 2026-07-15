@@ -1,0 +1,12 @@
+======================================================================
+COMPONENT 4 — CPCV GATE  (NIFTYBEES long-only EWMA overlay)
+======================================================================
+DSR (raw returns, deflated by K=8) = 0.940   [Sharpe gate >0.95]
+CPCV paths: 9
+Sharpe  strat vs B&H (median): 0.70 vs 0.75
+MaxDD   strat vs B&H (median): 16.9% vs 36.3%
+Calmar  strat vs B&H (median): 0.34 vs 0.29
+Delta MaxDD  median=+19.5pp   5th-pctile=+18.9pp   paths cutting DD=100%
+
+VERDICT — mandate (DD cut robust at 5th pctile): PASS
+         — Sharpe real (DSR>0.95): FAIL / not proven
